@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/zsh
 
-# Ensure .bashrc is in the root directory
+# Ensure .bzashrc is in the root directory
 if [ ! -f /root/.bashrc ]; then
     cp /etc/skel/.bashrc /root/.bashrc
     chmod 444 /root/.bashrc
