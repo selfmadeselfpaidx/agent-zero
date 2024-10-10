@@ -81,7 +81,7 @@ class PrintStyle:
             self.padding_added = True
 
     def _log_html(self, html):
-        with open(PrintStyle.log_file_path, "a") as f: # type: ignore
+        with open(PrintStyle.log_file_path, "a", encoding='utf-8') as f: # type: ignore # add encoding='utf-8'
             f.write(html)
 
     @staticmethod
@@ -116,6 +116,14 @@ class PrintStyle:
     def is_last_line_empty(self):
         lines = sys.stdin.readlines()
         return bool(lines) and not lines[-1].strip()
+
+    @staticmethod
+    def hint(text:str):
+        PrintStyle(font_color="#6C3483", padding=True).print("Hint: "+text)
+
+    @staticmethod
+    def error(text:str):
+        PrintStyle(font_color="red", padding=True).print("Error: "+text)
 
 # Ensure HTML file is closed properly when the program exits
 import atexit

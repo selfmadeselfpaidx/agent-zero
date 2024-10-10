@@ -3,6 +3,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import List, Tuple
 from .print_style import PrintStyle
+from .log import Log
 
 @dataclass
 class CallRecord:
@@ -11,7 +12,8 @@ class CallRecord:
     output_tokens: int = 0  # Default to 0, will be set separately
 
 class RateLimiter:
-    def __init__(self, max_calls: int, max_input_tokens: int, max_output_tokens: int, window_seconds: int = 60):
+    def __init__(self, logger: Log, max_calls: int, max_input_tokens: int, max_output_tokens: int, window_seconds: int = 60):
+        self.logger = logger
         self.max_calls = max_calls
         self.max_input_tokens = max_input_tokens
         self.max_output_tokens = max_output_tokens
@@ -48,6 +50,7 @@ class RateLimiter:
             wait_time = oldest_record.timestamp + self.window_seconds - current_time
             if wait_time > 0:
                 PrintStyle(font_color="yellow", padding=True).print(f"Rate limit exceeded. Waiting for {wait_time:.2f} seconds due to: {', '.join(wait_reasons)}")
+                self.logger.log("rate_limit","Rate limit exceeded",f"Rate limit exceeded. Waiting for {wait_time:.2f} seconds due to: {', '.join(wait_reasons)}")
                 time.sleep(wait_time)
             current_time = time.time()
 
@@ -62,17 +65,3 @@ class RateLimiter:
         if self.call_records:
             self.call_records[-1].output_tokens += output_token_count
         return self
-
-# Example usage
-rate_limiter = RateLimiter(max_calls=5, max_input_tokens=1000, max_output_tokens=2000)
-
-def rate_limited_function(input_token_count: int, output_token_count: int):
-    # First, limit the call and input tokens (this may wait)
-    rate_limiter.limit_call_and_input(input_token_count)
-    
-    # Your function logic here
-    print(f"Function called with {input_token_count} input tokens")
-    
-    # After processing, set the output tokens (this doesn't wait)
-    rate_limiter.set_output_tokens(output_token_count)
-    print(f"Function completed with {output_token_count} output tokens")
