@@ -2,10 +2,16 @@ from datetime import datetime
 from typing import Any, List, Sequence
 from langchain.storage import InMemoryByteStore, LocalFileStore
 from langchain.embeddings import CacheBackedEmbeddings
+from python.helpers import guids
 
 # from langchain_chroma import Chroma
 from langchain_community.vectorstores import FAISS
+
+# faiss needs to be patched for python 3.12 on arm #TODO remove once not needed
+from python.helpers import faiss_monkey_patch
 import faiss
+
+
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_community.vectorstores.utils import (
     DistanceStrategy,
@@ -19,12 +25,17 @@ import numpy as np
 from python.helpers.print_style import PrintStyle
 from . import files
 from langchain_core.documents import Document
-import uuid
 from python.helpers import knowledge_import
 from python.helpers.log import Log, LogItem
 from enum import Enum
-from agent import Agent, ModelConfig
+from agent import Agent, AgentContext
 import models
+import logging
+from simpleeval import simple_eval
+
+
+# Raise the log level so WARNING messages aren't shown
+logging.getLogger("langchain_core.vectorstores.base").setLevel(logging.ERROR)
 
 
 class MyFaiss(FAISS):
@@ -52,7 +63,7 @@ class Memory:
 
     @staticmethod
     async def get(agent: Agent):
-        memory_subdir = agent.config.memory_subdir or "default"
+        memory_subdir = get_agent_memory_subdir(agent)
         if Memory.index.get(memory_subdir) is None:
             log_item = agent.context.log.log(
                 type="util",
@@ -65,22 +76,51 @@ class Memory:
                 False,
             )
             Memory.index[memory_subdir] = db
-            wrap = Memory(agent, db, memory_subdir=memory_subdir)
-            if agent.config.knowledge_subdirs:
-                await wrap.preload_knowledge(
-                    log_item, agent.config.knowledge_subdirs, memory_subdir
-                )
+            wrap = Memory(db, memory_subdir=memory_subdir)
+            knowledge_subdirs = get_knowledge_subdirs_by_memory_subdir(
+                memory_subdir, agent.config.knowledge_subdirs or []
+            )
+            if knowledge_subdirs:
+                await wrap.preload_knowledge(log_item, knowledge_subdirs, memory_subdir)
             return wrap
         else:
             return Memory(
-                agent=agent,
                 db=Memory.index[memory_subdir],
                 memory_subdir=memory_subdir,
             )
 
     @staticmethod
+    async def get_by_subdir(
+        memory_subdir: str,
+        log_item: LogItem | None = None,
+        preload_knowledge: bool = True,
+    ):
+        if not Memory.index.get(memory_subdir):
+            import initialize
+
+            agent_config = initialize.initialize_agent()
+            model_config = agent_config.embeddings_model
+            db, _created = Memory.initialize(
+                log_item=log_item,
+                model_config=model_config,
+                memory_subdir=memory_subdir,
+                in_memory=False,
+            )
+            wrap = Memory(db, memory_subdir=memory_subdir)
+            if preload_knowledge:
+                knowledge_subdirs = get_knowledge_subdirs_by_memory_subdir(
+                    memory_subdir, agent_config.knowledge_subdirs or []
+                )
+                if knowledge_subdirs:
+                    await wrap.preload_knowledge(
+                        log_item, knowledge_subdirs, memory_subdir
+                    )
+            Memory.index[memory_subdir] = db
+        return Memory(db=Memory.index[memory_subdir], memory_subdir=memory_subdir)
+
+    @staticmethod
     async def reload(agent: Agent):
-        memory_subdir = agent.config.memory_subdir or "default"
+        memory_subdir = get_agent_memory_subdir(agent)
         if Memory.index.get(memory_subdir):
             del Memory.index[memory_subdir]
         return await Memory.get(agent)
@@ -88,7 +128,7 @@ class Memory:
     @staticmethod
     def initialize(
         log_item: LogItem | None,
-        model_config: ModelConfig,
+        model_config: models.ModelConfig,
         memory_subdir: str,
         in_memory=False,
     ) -> tuple[MyFaiss, bool]:
@@ -101,7 +141,7 @@ class Memory:
         em_dir = files.get_abs_path(
             "memory/embeddings"
         )  # just caching, no need to parameterize
-        db_dir = Memory._abs_db_dir(memory_subdir)
+        db_dir = abs_db_dir(memory_subdir)
 
         # make sure embeddings and database directories exist
         os.makedirs(db_dir, exist_ok=True)
@@ -112,14 +152,13 @@ class Memory:
             os.makedirs(em_dir, exist_ok=True)
             store = LocalFileStore(em_dir)
 
-        embeddings_model = models.get_model(
-            models.ModelType.EMBEDDING,
+        embeddings_model = models.get_embedding_model(
             model_config.provider,
             model_config.name,
-            **model_config.kwargs,
+            **model_config.build_kwargs(),
         )
         embeddings_model_id = files.safe_file_name(
-            model_config.provider.name + "_" + model_config.name
+            model_config.provider + "_" + model_config.name
         )
 
         # here we setup the embeddings model with the chosen cache storage
@@ -150,7 +189,7 @@ class Memory:
             if files.exists(emb_set_file):
                 embedding_set = json.loads(files.read_file(emb_set_file))
                 if (
-                    embedding_set["model_provider"] == model_config.provider.name
+                    embedding_set["model_provider"] == model_config.provider
                     and embedding_set["model_name"] == model_config.name
                 ):
                     # model matches
@@ -190,7 +229,7 @@ class Memory:
                 meta_file_path,
                 json.dumps(
                     {
-                        "model_provider": model_config.provider.name,
+                        "model_provider": model_config.provider,
                         "model_name": model_config.name,
                     }
                 ),
@@ -202,11 +241,9 @@ class Memory:
 
     def __init__(
         self,
-        agent: Agent,
         db: MyFaiss,
         memory_subdir: str,
     ):
-        self.agent = agent
         self.db = db
         self.memory_subdir = memory_subdir
 
@@ -217,7 +254,7 @@ class Memory:
             log_item.update(heading="Preloading knowledge...")
 
         # db abs path
-        db_dir = Memory._abs_db_dir(memory_subdir)
+        db_dir = abs_db_dir(memory_subdir)
 
         # Load the index file if it exists
         index_path = files.get_abs_path(db_dir, "knowledge_import.json")
@@ -266,12 +303,24 @@ class Memory:
     ):
         # load knowledge folders, subfolders by area
         for kn_dir in kn_dirs:
+            # everything in the root of the knowledge goes to main
+            index = knowledge_import.load_knowledge(
+                log_item,
+                abs_knowledge_dir(kn_dir),
+                index,
+                {"area": Memory.Area.MAIN},
+                filename_pattern="*",
+                recursive=False,
+            )
+            # subdirectories go to their folders
             for area in Memory.Area:
                 index = knowledge_import.load_knowledge(
                     log_item,
-                    files.get_abs_path("knowledge", kn_dir, area.value),
+                    # files.get_abs_path("knowledge", kn_dir, area.value),
+                    abs_knowledge_dir(kn_dir, area.value),
                     index,
                     {"area": area.value},
+                    recursive=True,
                 )
 
         # load instruments descriptions
@@ -281,19 +330,18 @@ class Memory:
             index,
             {"area": Memory.Area.INSTRUMENTS.value},
             filename_pattern="**/*.md",
+            recursive=True,
         )
 
         return index
+
+    def get_document_by_id(self, id: str) -> Document | None:
+        return self.db.get_by_ids(id)[0]
 
     async def search_similarity_threshold(
         self, query: str, limit: int, threshold: float, filter: str = ""
     ):
         comparator = Memory._get_comparator(filter) if filter else None
-
-        # rate limiter
-        await self.agent.rate_limiter(
-            model_config=self.agent.config.embeddings_model, input=query
-        )
 
         return await self.db.asearch(
             query,
@@ -326,7 +374,7 @@ class Memory:
                 # fnd = self.db.get(where={"id": {"$in": document_ids}})
                 # if fnd["ids"]: self.db.delete(ids=fnd["ids"])
                 # tot += len(fnd["ids"])
-                self.db.delete(ids=document_ids)
+                await self.db.adelete(ids=document_ids)
                 tot += len(document_ids)
 
             # If fewer than K document IDs, break the loop
@@ -339,7 +387,9 @@ class Memory:
 
     async def delete_documents_by_ids(self, ids: list[str]):
         # aget_by_ids is not yet implemented in faiss, need to do a workaround
-        rem_docs = self.db.get_by_ids(ids)  # existing docs to remove (prevents error)
+        rem_docs = await self.db.aget_by_ids(
+            ids
+        )  # existing docs to remove (prevents error)
         if rem_docs:
             rem_ids = [doc.metadata["id"] for doc in rem_docs]  # ids to remove
             await self.db.adelete(ids=rem_ids)
@@ -354,7 +404,7 @@ class Memory:
         return ids[0]
 
     async def insert_documents(self, docs: list[Document]):
-        ids = [str(uuid.uuid4()) for _ in range(len(docs))]
+        ids = [self._generate_doc_id() for _ in range(len(docs))]
         timestamp = self.get_timestamp()
 
         if ids:
@@ -364,31 +414,39 @@ class Memory:
                 if not doc.metadata.get("area", ""):
                     doc.metadata["area"] = Memory.Area.MAIN.value
 
-            # rate limiter
-            docs_txt = "".join(self.format_docs_plain(docs))
-            await self.agent.rate_limiter(
-                model_config=self.agent.config.embeddings_model, input=docs_txt
-            )
-
-            self.db.add_documents(documents=docs, ids=ids)
+            await self.db.aadd_documents(documents=docs, ids=ids)
             self._save_db()  # persist
         return ids
+
+    async def update_documents(self, docs: list[Document]):
+        ids = [doc.metadata["id"] for doc in docs]
+        await self.db.adelete(ids=ids)  # delete originals
+        ins = await self.db.aadd_documents(documents=docs, ids=ids)  # add updated
+        self._save_db()  # persist
+        return ins
 
     def _save_db(self):
         Memory._save_db_file(self.db, self.memory_subdir)
 
+    def _generate_doc_id(self):
+        while True:
+            doc_id = guids.generate_id(10)  # random ID
+            if not self.db.get_by_ids(doc_id):  # check if exists
+                return doc_id
+
     @staticmethod
     def _save_db_file(db: MyFaiss, memory_subdir: str):
-        abs_dir = Memory._abs_db_dir(memory_subdir)
+        abs_dir = abs_db_dir(memory_subdir)
         db.save_local(folder_path=abs_dir)
 
     @staticmethod
     def _get_comparator(condition: str):
         def comparator(data: dict[str, Any]):
             try:
-                return eval(condition, {}, data)
+                result = simple_eval(condition, names=data)
+                return result
             except Exception as e:
-                # PrintStyle.error(f"Error evaluating condition: {e}")
+                PrintStyle.error(f"Error evaluating condition: {e}")
                 return False
 
         return comparator
@@ -407,10 +465,6 @@ class Memory:
         return res
 
     @staticmethod
-    def _abs_db_dir(memory_subdir: str) -> str:
-        return files.get_abs_path("memory", memory_subdir)
-
-    @staticmethod
     def format_docs_plain(docs: list[Document]) -> list[str]:
         result = []
         for doc in docs:
@@ -426,10 +480,6 @@ class Memory:
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def get_memory_subdir_abs(agent: Agent) -> str:
-    return files.get_abs_path("memory", agent.config.memory_subdir or "default")
-
-
 def get_custom_knowledge_subdir_abs(agent: Agent) -> str:
     for dir in agent.config.knowledge_subdirs:
         if dir != "default":
@@ -440,3 +490,86 @@ def get_custom_knowledge_subdir_abs(agent: Agent) -> str:
 def reload():
     # clear the memory index, this will force all DBs to reload
     Memory.index = {}
+
+
+def abs_db_dir(memory_subdir: str) -> str:
+    # patch for projects, this way we don't need to re-work the structure of memory subdirs
+    if memory_subdir.startswith("projects/"):
+        from python.helpers.projects import get_project_meta_folder
+
+        return files.get_abs_path(get_project_meta_folder(memory_subdir[9:]), "memory")
+    # standard subdirs
+    return files.get_abs_path("memory", memory_subdir)
+
+
+def abs_knowledge_dir(knowledge_subdir: str, *sub_dirs: str) -> str:
+    # patch for projects, this way we don't need to re-work the structure of knowledge subdirs
+    if knowledge_subdir.startswith("projects/"):
+        from python.helpers.projects import get_project_meta_folder
+
+        return files.get_abs_path(
+            get_project_meta_folder(knowledge_subdir[9:]), "knowledge", *sub_dirs
+        )
+    # standard subdirs
+    return files.get_abs_path("knowledge", knowledge_subdir, *sub_dirs)
+
+
+def get_memory_subdir_abs(agent: Agent) -> str:
+    subdir = get_agent_memory_subdir(agent)
+    return abs_db_dir(subdir)
+
+
+def get_agent_memory_subdir(agent: Agent) -> str:
+    # if project is active, use project memory subdir
+    return get_context_memory_subdir(agent.context)
+
+
+def get_context_memory_subdir(context: AgentContext) -> str:
+    # if project is active, use project memory subdir
+    from python.helpers.projects import (
+        get_context_memory_subdir as get_project_memory_subdir,
+    )
+
+    memory_subdir = get_project_memory_subdir(context)
+    if memory_subdir:
+        return memory_subdir
+
+    # no project, regular memory subdir
+    return context.config.memory_subdir or "default"
+
+
+def get_existing_memory_subdirs() -> list[str]:
+    try:
+        from python.helpers.projects import (
+            get_project_meta_folder,
+            get_projects_parent_folder,
+        )
+
+        # Get subdirectories from memory folder
+        subdirs = files.get_subdirectories("memory", exclude="embeddings")
+
+        project_subdirs = files.get_subdirectories(get_projects_parent_folder())
+        for project_subdir in project_subdirs:
+            if files.exists(
+                get_project_meta_folder(project_subdir), "memory", "index.faiss"
+            ):
+                subdirs.append(f"projects/{project_subdir}")
+
+        # Ensure 'default' is always available
+        if "default" not in subdirs:
+            subdirs.insert(0, "default")
+
+        return subdirs
+    except Exception as e:
+        PrintStyle.error(f"Failed to get memory subdirectories: {str(e)}")
+        return ["default"]
+
+
+def get_knowledge_subdirs_by_memory_subdir(
+    memory_subdir: str, default: list[str]
+) -> list[str]:
+    if memory_subdir.startswith("projects/"):
+        from python.helpers.projects import get_project_meta_folder
+
+        default.append(get_project_meta_folder(memory_subdir[9:], "knowledge"))
+    return default

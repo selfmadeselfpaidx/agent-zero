@@ -2,23 +2,18 @@
 **/.DS_Store
 **/.env
 **/__pycache__/
+*.py[cod]
 **/.conda/
+
+#Ignore IDE files
+.cursor/
+.windsurf/
 
 # ignore test files in root dir
 /*.test.py
 
-# Ignore git internal files (for bundler)
-.git/
-
 # Ignore all contents of the virtual environment directory
 .venv/
-
-# Handle bundle directory
-bundle/*/
-!bundle/mac_pkg_scripts
-
-# Handle work_dir directory
-work_dir/*
 
 # Handle memory directory
 memory/**
@@ -27,8 +22,9 @@ memory/**
 # Handle logs directory
 logs/*
 
-# Handle tmp directory
+# Handle tmp and usr directory
 tmp/*
+usr/*
 
 # Handle knowledge directory
 knowledge/**
@@ -46,4 +42,7 @@ instruments/**
 
 # Global rule to include .gitkeep files anywhere
 !**/.gitkeep
+
+# for browser-use
 agent_history.gif
+

@@ -12,13 +12,13 @@ This page addresses frequently asked questions (FAQ) and provides troubleshootin
 Refer to the [Choosing your LLMs](installation.md#installing-and-using-ollama-local-models) section of the documentation for detailed instructions and examples for configuring different LLMs. Local models can be run using Ollama or LM Studio.
 
 > [!TIP]
-> Some LLM providers offer free usage of their APIs, for example Groq, Mistral or SambaNova.
+> Some LLM providers offer free usage of their APIs, for example Groq, Mistral, SambaNova or CometAPI.
 
 **6. How can I make Agent Zero retain memory between sessions?**
 Refer to the [How to update Agent Zero](installation.md#how-to-update-agent-zero) section of the documentation for instructions on how to update Agent Zero while retaining memory and data.
 
 **7. Where can I find more documentation or tutorials?**
--   Join the Agent Zero [Skool](https://www.skool.com/agent-zero) or [Discord](https://discord.gg/Z2tun2N3) community for support and discussions.
+-   Join the Agent Zero [Skool](https://www.skool.com/agent-zero) or [Discord](https://discord.gg/B8KZKNsPpj) community for support and discussions.
 
 **8. How do I adjust API rate limits?**
 Modify the `rate_limit_seconds` and `rate_limit_requests` parameters in the `AgentConfig` class within `initialize.py`.

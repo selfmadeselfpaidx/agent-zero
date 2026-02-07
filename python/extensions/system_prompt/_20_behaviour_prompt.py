@@ -11,12 +11,12 @@ class BehaviourPrompt(Extension):
         system_prompt.insert(0, prompt) #.append(prompt)
 
 def get_custom_rules_file(agent: Agent):
-    return memory.get_memory_subdir_abs(agent) + f"/behaviour.md"
+    return files.get_abs_path(memory.get_memory_subdir_abs(agent), "behaviour.md")
 
 def read_rules(agent: Agent):
     rules_file = get_custom_rules_file(agent)
     if files.exists(rules_file):
-        rules = files.read_file(rules_file)
+        rules = files.read_file(rules_file) # no includes and vars here, that could crash
         return agent.read_prompt("agent.system.behaviour.md", rules=rules)
     else:
         rules = agent.read_prompt("agent.system.behaviour_default.md")

@@ -92,6 +92,17 @@ class PrintStyle:
 
     def get(self, *args, sep=' ', **kwargs):
         text = sep.join(map(str, args))
+        
+        # Automatically mask secrets in all print output
+        try:
+            if not hasattr(self, "secrets_mgr"):
+                from python.helpers.secrets import get_secrets_manager
+                self.secrets_mgr = get_secrets_manager()
+            text = self.secrets_mgr.mask_values(text)
+        except Exception:
+            # If masking fails, proceed without masking to avoid breaking functionality
+            pass
+        
         return text, self._get_styled_text(text), self._get_html_styled_text(text)
 
     def print(self, *args, sep=' ', **kwargs):

@@ -1,5 +1,4 @@
-from python.helpers.api import ApiHandler
-from flask import Request, Response
+from python.helpers.api import ApiHandler, Request, Response
 
 class Nudge(ApiHandler):
     async def process(self, input: dict, request: Request) -> dict | Response:
@@ -7,7 +6,7 @@ class Nudge(ApiHandler):
         if not ctxid:
             raise Exception("No context id provided")
 
-        context = self.get_context(ctxid)
+        context = self.use_context(ctxid)
         context.nudge()
 
         msg = "Process reset, agent nudged."

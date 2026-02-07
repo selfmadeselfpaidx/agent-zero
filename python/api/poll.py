@@ -1,11 +1,7 @@
-import time
-from datetime import datetime
-from python.helpers.api import ApiHandler
-from flask import Request, Response
+from python.helpers.api import ApiHandler, Request, Response
 
-from agent import AgentContext
+from agent import AgentContext, AgentContextType
 
-from python.helpers import persist_chat
 from python.helpers.task_scheduler import TaskScheduler
 from python.helpers.localization import Localization
 from python.helpers.dotenv import get_dotenv_value
@@ -14,17 +10,29 @@ from python.helpers.dotenv import get_dotenv_value
 class Poll(ApiHandler):
 
     async def process(self, input: dict, request: Request) -> dict | Response:
-        ctxid = input.get("context", None)
+        ctxid = input.get("context", "")
         from_no = input.get("log_from", 0)
+        notifications_from = input.get("notifications_from", 0)
 
         # Get timezone from input (default to dotenv default or UTC if not provided)
         timezone = input.get("timezone", get_dotenv_value("DEFAULT_USER_TIMEZONE", "UTC"))
         Localization.get().set_timezone(timezone)
 
-        # context instance - get or create
-        context = self.get_context(ctxid)
+        # context instance - get or create only if ctxid is provided
+        if ctxid:
+            try:
+                context = self.use_context(ctxid, create_if_not_exists=False)
+            except Exception as e:
+                context = None
+        else:
+            context = None
 
-        logs = context.log.output(start=from_no)
+        # Get logs only if we have a context
+        logs = context.log.output(start=from_no) if context else []
+
+        # Get notifications from global notification manager
+        notification_manager = AgentContext.get_notification_manager()
+        notifications = notification_manager.output(start=notifications_from)
 
         # loop AgentContext._contexts
 
@@ -47,8 +55,13 @@ class Poll(ApiHandler):
             if ctx.id in processed_contexts:
                 continue
 
+            # Skip BACKGROUND contexts as they should be invisible to users
+            if ctx.type == AgentContextType.BACKGROUND:
+                processed_contexts.add(ctx.id)
+                continue
+
             # Create the base context data that will be returned
-            context_data = ctx.serialize()
+            context_data = ctx.output()
 
             context_task = scheduler.get_task_by_uuid(ctx.id)
             # Determine if this is a task-dedicated context by checking if a task with this UUID exists
@@ -65,7 +78,7 @@ class Poll(ApiHandler):
                     # Add task details to context_data with the same field names
                     # as used in scheduler endpoints to maintain UI compatibility
                     context_data.update({
-                        "task_name": task_details.get("name"), # name is for context, task_name for the task name
+                        "task_name": task_details.get("name"),  # name is for context, task_name for the task name
                         "uuid": task_details.get("uuid"),
                         "state": task_details.get("state"),
                         "type": task_details.get("type"),
@@ -96,13 +109,17 @@ class Poll(ApiHandler):
 
         # data from this server
         return {
-            "context": context.id,
+            "deselect_chat": ctxid and not context,
+            "context": context.id if context else "",
             "contexts": ctxs,
             "tasks": tasks,
             "logs": logs,
-            "log_guid": context.log.guid,
-            "log_version": len(context.log.updates),
-            "log_progress": context.log.progress,
-            "log_progress_active": context.log.progress_active,
-            "paused": context.paused,
+            "log_guid": context.log.guid if context else "",
+            "log_version": len(context.log.updates) if context else 0,
+            "log_progress": context.log.progress if context else 0,
+            "log_progress_active": context.log.progress_active if context else False,
+            "paused": context.paused if context else False,
+            "notifications": notifications,
+            "notifications_guid": notification_manager.guid,
+            "notifications_version": len(notification_manager.updates),
         }

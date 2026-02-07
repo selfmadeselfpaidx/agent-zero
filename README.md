@@ -1,31 +1,47 @@
 <div align="center">
 
-![Agent Zero](/docs/res/header.png)
-
 # `Agent Zero`
 
-[![Thanks to Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-Thanks%20to%20Sponsors-FF69B4?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/frdel) [![Follow on X](https://img.shields.io/badge/X-Follow-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/Agent0ai) [![Join our Discord](https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/B8KZKNsPpj) [![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@AgentZeroFW) [![Connect on LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/jan-tomasek/) [![Follow on Warpcast](https://img.shields.io/badge/Warpcast-Follow-5A32F3?style=for-the-badge)](https://warpcast.com/agent-zero)
+<p align="center">
+    <a href="https://trendshift.io/repositories/11745" target="_blank"><img src="https://trendshift.io/api/badge/repositories/11745" alt="frdel%2Fagent-zero | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+</p>
+
+[![Agent Zero Website](https://img.shields.io/badge/Website-agent--zero.ai-0A192F?style=for-the-badge&logo=vercel&logoColor=white)](https://agent-zero.ai) [![Thanks to Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-Thanks%20to%20Sponsors-FF69B4?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/agent0ai) [![Follow on X](https://img.shields.io/badge/X-Follow-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/Agent0ai) [![Join our Discord](https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/B8KZKNsPpj) [![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@AgentZeroFW) [![Connect on LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/jan-tomasek/) [![Follow on Warpcast](https://img.shields.io/badge/Warpcast-Follow-5A32F3?style=for-the-badge)](https://warpcast.com/agent-zero) 
 
 
+## Documentation:
+
+[Introduction](#a-personal-organic-agentic-framework-that-grows-and-learns-with-you) •
 [Installation](./docs/installation.md) •
+[Development](./docs/development.md) •
+[Extensibility](./docs/extensibility.md) •
+[Connectivity](./docs/connectivity.md) •
 [How to update](./docs/installation.md#how-to-update-agent-zero) •
 [Documentation](./docs/README.md) •
 [Usage](./docs/usage.md)
 
+Or see DeepWiki generated documentation:
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/agent0ai/agent-zero)
+
 </div>
 
 
-[![Showcase](/docs/res/showcase-thumb.png)](https://youtu.be/lazLNcEYsiQ)
+<div align="center">
+
+> ### 🚨 **PROJECTS!** 🚨
+Agent Zero now supports **Projects** – isolated workspaces with their own prompts, files, memory, and secrets, so you can create dedicated setups for each use case without mixing contexts.
+</div>
 
 
 
-See [www.agent-zero.ai](https://agent-zero.ai) for more info
-
-[![Browser Agent](/docs/res/web_screenshot.jpg)](https://agent-zero.ai)
+[![Showcase](/docs/res/showcase-thumb.png)](https://youtu.be/MdzLhWWoxEs)
 
 
 
 ## A personal, organic agentic framework that grows and learns with you
+
+
 
 - Agent Zero is not a predefined agentic framework. It is designed to be dynamic, organically growing, and learning as you use it.
 - Agent Zero is fully transparent, readable, comprehensible, customizable, and interactive.
@@ -45,7 +61,7 @@ See [www.agent-zero.ai](https://agent-zero.ai) for more info
 - Agent Zero uses the operating system as a tool to accomplish its tasks. It has no single-purpose tools pre-programmed. Instead, it can write its own code and use the terminal to create and use its own tools as needed.
 - The only default tools in its arsenal are online search, memory features, communication (with the user and other agents), and code/terminal execution. Everything else is created by the agent itself or can be extended by the user.
 - Tool usage functionality has been developed from scratch to be the most compatible and reliable, even with very small models.
-- **Default Tools:** Agent Zero includes tools like knowledge, webpage content, code execution, and communication.
+- **Default Tools:** Agent Zero includes tools like knowledge, code execution, and communication.
 - **Creating Custom Tools:** Extend Agent Zero's functionality by creating your own custom tools.
 - **Instruments:** Instruments are a new type of tool that allow you to create custom functions and procedures that can be called by Agent Zero.
 
@@ -87,11 +103,13 @@ See [www.agent-zero.ai](https://agent-zero.ai) for more info
 
 - **Research** - `"Gather and summarize five recent AI papers about CoT prompting"`
 
+
+
 # ⚙️ Installation
 
 Click to open a video to learn how to install Agent Zero:
 
-[![Testing Video](/docs/res/new_vid.jpg)](https://www.youtube.com/watch?v=cHDCCSr1YRI&t=24s)
+[![Easy Installation guide](/docs/res/easy_ins_vid.png)](https://www.youtube.com/watch?v=w5v5Kjx51hs)
 
 A detailed setup guide for Windows, macOS, and Linux with a video can be found in the Agent Zero Documentation at [this page](./docs/installation.md).
 
@@ -100,8 +118,8 @@ A detailed setup guide for Windows, macOS, and Linux with a video can be found i
 ```bash
 # Pull and run with Docker
 
-docker pull frdel/agent-zero-run
-docker run -p 50001:80 frdel/agent-zero-run
+docker pull agent0ai/agent-zero
+docker run -p 50001:80 agent0ai/agent-zero
 
 # Visit http://localhost:50001 to start
 ```
@@ -138,22 +156,161 @@ docker run -p 50001:80 frdel/agent-zero-run
 |-------|-------------|
 | [Installation](./docs/installation.md) | Installation, setup and configuration |
 | [Usage](./docs/usage.md) | Basic and advanced usage |
+| [Development](./docs/development.md) | Development and customization |
+| [Extensibility](./docs/extensibility.md) | Extending Agent Zero |
+| [Connectivity](./docs/connectivity.md) | External API endpoints, MCP server connections, A2A protocol |
 | [Architecture](./docs/architecture.md) | System design and components |
-| [Contributing](./docs/contributing.md) | How to contribute |
+| [Contributing](./docs/contribution.md) | How to contribute |
 | [Troubleshooting](./docs/troubleshooting.md) | Common issues and their solutions |
 
-## Coming soon
-
-- **MCP**
-- **Knowledge and RAG Tools**
 
 ## 🎯 Changelog
+
+### v0.9.7 - Projects
+[Release video](https://youtu.be/RrTDp_v9V1c)
+- Projects management
+    - Support for custom instructions
+    - Integration with memory, knowledge, files
+    - Project specific secrets 
+- New Welcome screen/Dashboard
+- New Wait tool
+- Subordinate agent configuration override support
+- Support for multiple documents at once in document_query_tool
+- Improved context on interventions
+- Openrouter embedding support
+- Frontend components refactor and polishing
+- SSH metadata output fix
+- Support for windows powershell in local TTY utility
+- More efficient selective streaming for LLMs
+- UI output length limit improvements
+
+
+
+### v0.9.6 - Memory Dashboard
+[Release video](https://youtu.be/sizjAq2-d9s)
+- Memory Management Dashboard
+- Kali update
+- Python update + dual installation
+- Browser Use update
+- New login screen
+- LiteLLM retry on temporary errors
+- Github Copilot provider support
+
+
+### v0.9.5 - Secrets
+[Release video](https://www.youtube.com/watch?v=VqxUdt7pjd8)
+- Secrets management - agent can use credentials without seeing them
+- Agent can copy paste messages and files without rewriting them
+- LiteLLM global configuration field
+- Custom HTTP headers field for browser agent
+- Progressive web app support
+- Extra model params support for JSON
+- Short IDs for files and memories to prevent LLM errors
+- Tunnel component frontend rework
+- Fix for timezone change bug
+- Notifications z-index fix
+
+### v0.9.4 - Connectivity, UI
+[Release video](https://www.youtube.com/watch?v=C2BAdDOduIc)
+- External API endpoints
+- Streamable HTTP MCP A0 server
+- A2A (Agent to Agent) protocol - server+client
+- New notifications system
+- New local terminal interface for stability
+- Rate limiter integration to models
+- Delayed memory recall
+- Smarter autoscrolling in UI
+- Action buttons in messages
+- Multiple API keys support
+- Download streaming
+- Tunnel URL QR code
+- Internal fixes and optimizations
+
+### v0.9.3 - Subordinates, memory, providers Latest
+[Release video](https://www.youtube.com/watch?v=-LfejFWL34k)
+- Faster startup/restart
+- Subordinate agents can have dedicated prompts, tools and system extensions
+- Streamable HTTP MCP server support
+- Memory loading enhanced by AI filter
+- Memory AI consolidation when saving memories
+- Auto memory system configuration in settings
+- LLM providers available are set by providers.yaml configuration file
+- Venice.ai LLM provider supported
+- Initial agent message for user + as example for LLM
+- Docker build support for local images
+- File browser fix
+
+
+### v0.9.2 - Kokoro TTS, Attachments
+[Release video](https://www.youtube.com/watch?v=sPot_CAX62I)
+
+- Kokoro text-to-speech integration
+- New message attachments system
+- Minor updates: log truncation, hyperlink targets, component examples, api cleanup
+
+
+### v0.9.1 - LiteLLM, UI improvements
+[Release video](https://youtu.be/crwr0M4Spcg)
+- Langchain replaced with LiteLLM
+    - Support for reasoning models streaming
+    - Support for more providers
+    - Openrouter set as default instead of OpenAI
+- UI improvements
+    - New message grouping system
+    - Communication smoother and more efficient
+    - Collapsible messages by type
+    - Code execution tool output improved
+    - Tables and code blocks scrollable
+    - More space efficient on mobile
+- Streamable HTTP MCP servers support
+- LLM API URL added to models config for Azure, local and custom providers
+    
+
+### v0.9.0 - Agent roles, backup/restore
+[Release video](https://www.youtube.com/watch?v=rMIe-TC6H-k)
+- subordinate agents can use prompt profiles for different roles
+- backup/restore functionality for easier upgrades
+- security and bug fixes
+
+### v0.8.7 - Formatting, Document RAG Latest
+[Release video](https://youtu.be/OQJkfofYbus)
+- markdown rendering in responses
+- live response rendering
+- document Q&A tool
+
+### v0.8.6 - Merge and update
+[Release video](https://youtu.be/l0qpK3Wt65A)
+- Merge with Hacking Edition
+- browser-use upgrade and integration re-work
+- tunnel provider switch
+
+### v0.8.5 - **MCP Server + Client**
+[Release video](https://youtu.be/pM5f4Vz3_IQ)
+
+- Agent Zero can now act as MCP Server
+- Agent Zero can use external MCP servers as tools
+
+### v0.8.4.1 - 2
+Default models set to gpt-4.1
+- Code execution tool improvements
+- Browser agent improvements
+- Memory improvements
+- Various bugfixes related to context management
+- Message formatting improvements
+- Scheduler improvements
+- New model provider
+- Input tool fix
+- Compatibility and stability improvements
+
+### v0.8.4
+[Release video](https://youtu.be/QBh_h_D_E24)
+
+- **Remote access (mobile)**
 
 ### v0.8.3.1
 [Release video](https://youtu.be/AGNpQ3_GxFQ)
 
 - **Automatic embedding**
-
 
 
 ### v0.8.3
@@ -200,4 +357,4 @@ docker run -p 50001:80 frdel/agent-zero-run
 
 - [Join our Discord](https://discord.gg/B8KZKNsPpj) for live discussions or [visit our Skool Community](https://www.skool.com/agent-zero).
 - [Follow our YouTube channel](https://www.youtube.com/@AgentZeroFW) for hands-on explanations and tutorials
-- [Report Issues](https://github.com/frdel/agent-zero/issues) for bug fixes and features
+- [Report Issues](https://github.com/agent0ai/agent-zero/issues) for bug fixes and features
